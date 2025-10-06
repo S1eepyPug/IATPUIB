@@ -50,7 +50,7 @@ aleksandr.zwonov@yandex.ru
     -   векторы (Vectors)
     -   пропущенные значения (Missing Values)
 
-\`\`\`| | 0%
+```| | 0%
 
 In this lesson, we will explore some basic building blocks of the R
 programming language.
@@ -1338,7 +1338,7 @@ What happens if you subtract | Inf from Inf?
 Your dedication is inspiring!
 
 |======================================================================================|
-100%\`\`\`
+100%```
 
 ## Оценка результата
 

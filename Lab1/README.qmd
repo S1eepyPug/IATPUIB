@@ -51,7 +51,8 @@ install.packages("swirl")
     -   векторы (Vectors)
     -   пропущенные значения (Missing Values)
 
-```\| \| 0%
+```
+\| \| 0%
 
 | In this lesson, we will explore some basic building blocks of the R programming language.
 
@@ -903,7 +904,8 @@ install.packages("swirl")
 
 | Your dedication is inspiring!
 
-\|======================================================================================\| 100%```
+\|======================================================================================\| 100%
+```
 
 ## Оценка результата
 

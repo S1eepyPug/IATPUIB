@@ -44,15 +44,13 @@ install.packages("swirl")
 ![](./imgs/img2.png)
 
 6.  Запустить подкурсы и выполнить:
-
     -   базовые структурные блоки (Basic Building Blocks)
     -   рабочие пространства и файлы (Workspace and Files)
     -   последовательности чисел (Sequences of Numbers)
     -   векторы (Vectors)
     -   пропущенные значения (Missing Values)
 
-```
-\| \| 0%
+|                                                                                      \| 0%
 
 | In this lesson, we will explore some basic building blocks of the R programming language.
 
@@ -64,7 +62,11 @@ install.packages("swirl")
 
 \|===== \| 5% \| In its simplest form, R can be used as an interactive calculator. Type 5 + 7 and press Enter.
 
-> 5+7 \[1\] 12
+```{r}
+5+7
+```
+
+\[1\] 12
 
 | You got it!
 
@@ -905,7 +907,6 @@ install.packages("swirl")
 | Your dedication is inspiring!
 
 \|======================================================================================\| 100%
-```
 
 ## Оценка результата
 

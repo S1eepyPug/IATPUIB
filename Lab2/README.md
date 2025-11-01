@@ -42,7 +42,7 @@ library(dplyr)
 
 #### Проведем анализ датафрейма starwars
 
-1.  Сколько строк в датафрейме?
+1\. Сколько строк в датафрейме?
 
 ``` r
 starwars %>% nrow()
@@ -50,7 +50,7 @@ starwars %>% nrow()
 
     [1] 87
 
-1.  Сколько столбцов в датафрейме?
+2\. Сколько столбцов в датафрейме?
 
 ``` r
 starwars %>% ncol()
@@ -58,7 +58,7 @@ starwars %>% ncol()
 
     [1] 14
 
-1.  Как просмотреть примерный вид датафрейма?
+3\. Как просмотреть примерный вид датафрейма?
 
 ``` r
 starwars %>% glimpse()
@@ -81,7 +81,7 @@ starwars %>% glimpse()
     $ vehicles   <list> <"Snowspeeder", "Imperial Speeder Bike">, <>, <>, <>, "Imp…
     $ starships  <list> <"X-wing", "Imperial shuttle">, <>, <>, "TIE Advanced x1",…
 
-1.  Сколько уникальных рас персонажей (species) представлено в данных?
+4\. Сколько уникальных рас персонажей (species) представлено в данных?
 
 ``` r
 starwars %>% select(species) %>% filter(!is.na(species)) %>% unique() %>% count() 
@@ -92,7 +92,7 @@ starwars %>% select(species) %>% filter(!is.na(species)) %>% unique() %>% count(
       <int>
     1    37
 
-1.  Найти самого высокого персонажа.
+5\. Найти самого высокого персонажа.
 
 ``` r
 starwars %>% select(name, height) %>% arrange(desc(height)) %>% head(1) 
@@ -103,7 +103,7 @@ starwars %>% select(name, height) %>% arrange(desc(height)) %>% head(1)
       <chr>        <int>
     1 Yarael Poof    264
 
-1.  Найти всех персонажей ниже 170.
+6\. Найти всех персонажей ниже 170.
 
 ``` r
 starwars%>% select(name, height) %>% filter(height < 170)
@@ -124,7 +124,7 @@ starwars%>% select(name, height) %>% filter(height < 170)
     10 Watto                    137
     # ℹ 12 more rows
 
-1.  Подсчитать ИМТ (индекс массы тела) для всех персонажей по формуле.
+7\. Подсчитать ИМТ (индекс массы тела) для всех персонажей по формуле.
 
 ``` r
 starwars %>% mutate(res = round(mass/(height^2),5)) %>% select(name, res)
@@ -145,8 +145,8 @@ starwars %>% mutate(res = round(mass/(height^2),5)) %>% select(name, res)
     10 Obi-Wan Kenobi     0.00232
     # ℹ 77 more rows
 
-1.  Найти 10 самых “вытянутых” персонажей. “Вытянутость” оценить по
-    отношению массы (mass) к росту (height) персонажей.
+8\. Найти 10 самых “вытянутых” персонажей. “Вытянутость” оценить по
+отношению массы (mass) к росту (height) персонажей.
 
 ``` r
 starwars %>% mutate(res = round(mass/height,5)) %>% select(name, res) %>% arrange(res) %>% head(10)
@@ -166,8 +166,8 @@ starwars %>% mutate(res = round(mass/height,5)) %>% select(name, res) %>% arrang
      9 Ayla Secura           0.309
     10 Shaak Ti              0.320
 
-1.  Найти средний возраст персонажей каждой расы вселенной Звездных
-    войн.
+9\. Найти средний возраст персонажей каждой расы вселенной Звездных
+войн.
 
 ``` r
 starwars %>% filter(!is.na(species)) %>% filter(!is.na(birth_year)) %>% group_by( species) %>% summarise(mean_age = mean(100 - birth_year)) %>% select(species, mean_age)
@@ -192,8 +192,8 @@ starwars %>% filter(!is.na(species)) %>% filter(!is.na(birth_year)) %>% group_by
     14 Yoda's species   -796  
     15 Zabrak             46  
 
-1.  Найти самый распространенный цвет глаз персонажей вселенной Звездных
-    войн.
+10\. Найти самый распространенный цвет глаз персонажей вселенной
+Звездных войн.
 
 ``` r
 starwars %>% group_by(eye_color) %>% summarise(count = n()) %>% select(eye_color, count) %>% arrange(desc(count)) %>% head(1)
@@ -204,8 +204,8 @@ starwars %>% group_by(eye_color) %>% summarise(count = n()) %>% select(eye_color
       <chr>     <int>
     1 brown        21
 
-1.  Подсчитать среднюю длину имени в каждой расе вселенной Звездных
-    войн.
+11\. Подсчитать среднюю длину имени в каждой расе вселенной Звездных
+войн.
 
 ``` r
 starwars %>% filter(!is.na(species)) %>% group_by(species) %>% summarise(mean_len = mean(nchar(name))) %>% select(species, mean_len)

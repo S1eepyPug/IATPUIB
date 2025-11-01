@@ -46,7 +46,7 @@ library(dplyr)
 
 #### Проанализируем встроенные в пакет nycflights13 наборы данных
 
-1.  Сколько встроенных в пакет nycflights13 датафреймов?
+1\. Сколько встроенных в пакет nycflights13 датафреймов?
 
 ``` r
 data(package = "nycflights13")$results[, "Item"]
@@ -60,7 +60,7 @@ length(data(package = "nycflights13")$results[, "Item"])
 
     [1] 5
 
-1.  Сколько строк в каждом датафрейме?
+2\. Сколько строк в каждом датафрейме?
 
 ``` r
 airlines |> nrow()
@@ -92,7 +92,7 @@ weather |> nrow()
 
     [1] 26115
 
-1.  Сколько столбцов в каждом датафрейме?
+3\. Сколько столбцов в каждом датафрейме?
 
 ``` r
 airlines |> ncol()
@@ -124,7 +124,7 @@ weather |> ncol()
 
     [1] 15
 
-1.  Как просмотреть примерный вид датафрейма?
+4\. Как просмотреть примерный вид датафрейма?
 
 ``` r
 airlines |> glimpse()
@@ -135,8 +135,8 @@ airlines |> glimpse()
     $ carrier <chr> "9E", "AA", "AS", "B6", "DL", "EV", "F9", "FL", "HA", "MQ", "O…
     $ name    <chr> "Endeavor Air Inc.", "American Airlines Inc.", "Alaska Airline…
 
-1.  Сколько компаний-перевозчиков (carrier) учитывают эти наборы данных
-    (представлено в наборах данных)?
+5\. Сколько компаний-перевозчиков (carrier) учитывают эти наборы данных
+(представлено в наборах данных)?
 
 ``` r
 airlines |> select(carrier) |> unique() |> count()
@@ -147,7 +147,7 @@ airlines |> select(carrier) |> unique() |> count()
       <int>
     1    16
 
-1.  Сколько рейсов принял аэропорт John F Kennedy Intl в мае?
+6\. Сколько рейсов принял аэропорт John F Kennedy Intl в мае?
 
 ``` r
 left_join(flights, airports, by = c("origin"="faa")) |> filter(name == "John F Kennedy Intl" & month == 5) |> count()
@@ -158,7 +158,7 @@ left_join(flights, airports, by = c("origin"="faa")) |> filter(name == "John F K
       <int>
     1  9397
 
-1.  Какой самый северный аэропорт?
+7\. Какой самый северный аэропорт?
 
 ``` r
 arrange(airports, desc(lon)) |> select(name) |>  head(1)
@@ -169,8 +169,8 @@ arrange(airports, desc(lon)) |> select(name) |>  head(1)
       <chr>       
     1 Eareckson As
 
-1.  Какой аэропорт самый высокогорный (находится выше всех над уровнем
-    моря)?
+8\. Какой аэропорт самый высокогорный (находится выше всех над уровнем
+моря)?
 
 ``` r
 arrange(airports, desc(alt)) |> select(name) |>  head(1)
@@ -181,7 +181,7 @@ arrange(airports, desc(alt)) |> select(name) |>  head(1)
       <chr>    
     1 Telluride
 
-1.  Какие бортовые номера у самых старых самолетов?
+9\. Какие бортовые номера у самых старых самолетов?
 
 ``` r
 arrange(planes, year) |> select(tailnum) |> head()
@@ -197,8 +197,8 @@ arrange(planes, year) |> select(tailnum) |> head()
     5 N575AA 
     6 N14629 
 
-1.  Какая средняя температура воздуха была в сентябре в аэропорту John F
-    Kennedy Intl (в градусах Цельсия).
+10\. Какая средняя температура воздуха была в сентябре в аэропорту John
+F Kennedy Intl (в градусах Цельсия).
 
 ``` r
 left_join(weather, airports, by=c("origin"="faa")) |> filter(name == "John F Kennedy Intl" & month == 9) |> summarise(mean_temp = (mean(temp)- 32) / 1.8)
@@ -209,7 +209,7 @@ left_join(weather, airports, by=c("origin"="faa")) |> filter(name == "John F Ken
           <dbl>
     1      19.4
 
-1.  Самолеты какой авиакомпании совершили больше всего вылетов в июне?
+11\. Самолеты какой авиакомпании совершили больше всего вылетов в июне?
 
 ``` r
 left_join(flights, airlines, join_by(carrier)) |> filter(month == 6) |> group_by(name) |> summarise(amount = n()) |> arrange(desc(amount)) |> head(1) |> select(name)
@@ -220,7 +220,7 @@ left_join(flights, airlines, join_by(carrier)) |> filter(month == 6) |> group_by
       <chr>                
     1 United Air Lines Inc.
 
-1.  Самолеты какой авиакомпании задерживались чаще других в 2013 году?
+12\. Самолеты какой авиакомпании задерживались чаще других в 2013 году?
 
 ``` r
 left_join(flights, airlines, join_by(carrier)) |> group_by(name) |> filter( arr_delay > 0 & year == 2013) |> group_by(name) |> summarise(n = n()) |> arrange(desc(n)) |> select(name) |> head(1)

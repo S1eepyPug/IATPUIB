@@ -1,0 +1,279 @@
+---
+title: "Исследование метаданных DNS трафика"
+author: "aleksandr.zwonov@yandex.ru"
+format: 
+  md:
+    output-file: README.md
+editor: visual
+---
+
+## Цель работы
+
+1.  Закрепить практические навыки использования языка программирования R для обработки данных
+2.  Закрепить знания основных функций обработки данных экосистемы tidyverse языка R
+3.  Закрепить навыки исследования метаданных DNS трафика
+
+## Исходные данные
+
+1.  Программное обеспечение Windows 10 Pro
+2.  Rstudio Desktop
+3.  Интерпретатор языка R 4.5.1
+
+## Задание
+
+Используя программный пакет dplyr, освоить анализ DNS логов с помощью языка программирования R.
+
+### Шаги
+
+Установим и подключим необходимые библиотеки
+
+```{r}
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+install.packages("dplyr")
+install.packages("tidyverse")
+```
+
+```{r}
+library(dplyr)
+library(tidyverse)
+```
+
+1.  Импортируйте данные DNS.
+
+```{r}
+download.file("https://storage.yandexcloud.net/dataset.ctfsec/dns.zip", "dns.zip")
+```
+
+```{r}
+unzip("dns.zip")
+```
+
+```{r}
+data <- read_tsv("dns.log", comment = "#", col_names = FALSE)
+```
+
+2.  Добавьте пропущенные данные о структуре данных (назначении столбцов).
+
+```{r}
+colnames(data) <- c(
+  "timestamp", "uid", "source_ip", "source_port", "destination_ip", 
+  "destination_port", "protocol", "transaction_id", "query", "qclass", 
+  "qclass_name", "qtype", "qtype_name", "rcode", "rcode_name", 
+  "AA", "TC", "RD", "RA", "Z", "answer", "TTLS", "rejected"
+)
+```
+
+3.  Преобразуйте данные в столбцах в нужный формат.
+```{r}
+data <- data %>% mutate(
+    timestamp = as.POSIXct(timestamp, origin = "1970-01-01"),
+    source_port = as.numeric(source_port),
+    destination_port = as.numeric(destination_port),
+    transaction_id = as.numeric(transaction_id),
+    qclass = as.numeric(qclass),
+    qtype = as.numeric(qtype),
+    rcode = as.numeric(rcode),
+  ) 
+```
+
+4.  Просмотрите общую структуру данных с помощью функции glimpse().
+
+```{r}
+glimpse(data)
+```
+
+5.  Сколько участников информационного обмена в сети Доброй Организации?
+
+```{r}
+length(unique(c(data$source_ip, data$destination_ip)))
+```
+
+6.  Какое соотношение участников обмена внутри сети и участников обращений к внешним ресурсам?
+```{r}
+install.packages("ipaddress")
+library(ipaddress)
+```
+
+```{r}
+ip_addresses <- ip_address(data %>% distinct(destination_ip) %>% pull(destination_ip))
+internal <- sum(is_private(ip_addresses), na.rm = TRUE)
+external <- sum(!is_private(ip_addresses), na.rm = TRUE)
+internal / external
+
+```
+7.  Найдите топ-10 участников сети, проявляющих наибольшую сетевую активность.
+```{r}
+data %>%
+  count(source_ip, sort = TRUE) %>%
+  head(10)
+
+```
+
+8.  Найдите топ-10 доменов, к которым обращаются пользователи сети и соответственное количество обращений.
+
+```{r}
+data |>  count(query, sort = TRUE) |>  head(10)
+```
+
+9.  Опеределите базовые статистические характеристики (функция summary() ) интервала времени между последовательным обращениями к топ-10 доменам.
+
+```{r}
+top_10_queries <- data %>%
+  count(query, sort = TRUE) %>%
+  head(10) %>%
+  pull(query)
+
+intervals_by_query <- data %>%
+  filter(query %in% top_10_queries) %>%
+  arrange(query, timestamp) %>%
+  group_by(query) %>%
+  mutate(
+    time_diff_sec = c(NA, diff(as.numeric(timestamp))) 
+  ) %>%
+  ungroup()
+
+summary_list <- intervals_by_query %>%
+  group_by(query) %>%
+  summarise(
+    interval_summary = list(summary(time_diff_sec, na.rm = TRUE)),
+    .groups = "drop"
+  )
+
+
+for (i in seq_len(nrow(summary_list))) {
+  q <- summary_list$query[i]
+  s <- summary_list$interval_summary[[i]]
+  cat("Домен: ", q, "\n")
+  print(s)
+}
+```
+
+10. Часто вредоносное программное обеспечение использует DNS канал в качестве канала управления, периодически отправляя запросы на подконтрольный злоумышленникам DNS сервер. По периодическим запросам на один и тот же домен можно выявить скрытый DNS канал. Есть ли такие IP адреса в исследуемом датасете?
+
+```{r}
+pot_adrs <- data %>%
+  group_by(source_ip, query) %>%
+  summarise(request_count = n(), .groups = "drop") %>%
+  filter(request_count > 10) %>%
+  arrange(desc(request_count))
+
+
+periodic_requests <- data %>%
+  semi_join(pot_adrs, by = c("source_ip", "query")) %>%  
+  arrange(source_ip, query, timestamp) %>%
+  group_by(source_ip, query) %>%
+  mutate(
+    time_diff = as.numeric(difftime(timestamp, lag(timestamp), units = "secs"))
+  ) %>%
+  filter(!is.na(time_diff)) %>%
+  summarise(
+    request_count = n() + 1,
+    mean_interval = mean(time_diff),
+    sd_interval = sd(time_diff),
+    cv = ifelse(mean_interval > 0, sd_interval / mean_interval, Inf),
+    .groups = "drop"
+  ) %>%
+  filter(cv < 0.5) %>%
+  arrange(cv)
+
+periodic_requests
+```
+11. Определите местоположение (страну, город) и организацию-провайдера для топ-10 доменов.
+
+```{r}
+install.packages(c("httr", "jsonlite"))
+library(httr)
+library(jsonlite)
+```
+
+```{r}
+top_domains <- data %>%
+  count(query, sort = TRUE) %>%
+  head(10)
+
+is_private <- function(ips) {
+  sapply(ips, function(ip) {
+    if (is.na(ip)) return(TRUE)
+    parts <- unlist(strsplit(ip, "\\."))
+    if (length(parts) != 4) return(TRUE)
+    nums <- suppressWarnings(as.numeric(parts))
+    if (any(is.na(nums))) return(TRUE)
+    a <- nums[1]; b <- nums[2]
+    (a == 10) || (a == 172 && b >= 16 && b <= 31) || (a == 192 && b == 168)
+  })
+}
+
+domain_to_ip <- data %>%
+  filter(query %in% top_domains$query) %>%
+  filter(!is_private(destination_ip)) %>%
+  count(query, destination_ip, sort = TRUE) %>%
+  group_by(query) %>%
+  slice(1) %>%
+  ungroup() %>%
+  select(domain = query, ip = destination_ip)
+
+if (nrow(domain_to_ip) == 0) {
+  domain_to_ip <- data %>%
+    filter(query %in% top_domains$query) %>%
+    count(query, destination_ip, sort = TRUE) %>%
+    group_by(query) %>%
+    slice(1) %>%
+    ungroup() %>%
+    select(domain = query, ip = destination_ip)
+}
+
+get_geo <- function(ip) {
+  url <- paste0("http://ip-api.com/json/", ip, "?fields=country,city,org,isp,status")
+  Sys.sleep(1.5)
+  
+  resp <- tryCatch({
+    GET(url, timeout(10))
+  }, error = function(e) NULL)
+  
+  if (is.null(resp) || status_code(resp) != 200) {
+    return(data.frame(ip = ip, country = NA, city = NA, org = NA, stringsAsFactors = FALSE))
+  }
+  
+  txt <- content(resp, "text")
+  parsed <- tryCatch(fromJSON(txt, simplifyVector = TRUE), error = function(e) NULL)
+  
+  if (is.null(parsed) || is.null(parsed$status) || parsed$status != "success") {
+    return(data.frame(ip = ip, country = NA, city = NA, org = NA, stringsAsFactors = FALSE))
+  }
+  
+  org_value <- ifelse(!is.null(parsed$org) && parsed$org != "", 
+                     parsed$org, 
+                     ifelse(!is.null(parsed$isp) && parsed$isp != "", 
+                            parsed$isp, 
+                            NA))
+  
+  data.frame(
+    ip = ip,
+    country = ifelse(is.null(parsed$country), NA, as.character(parsed$country)),
+    city = ifelse(is.null(parsed$city), NA, as.character(parsed$city)),
+    org = org_value,
+    stringsAsFactors = FALSE
+  )
+}
+
+results_list <- list()
+for (i in 1:nrow(domain_to_ip)) {
+  geo <- get_geo(domain_to_ip$ip[i])
+  results_list[[i]] <- data.frame(
+    domain = domain_to_ip$domain[i],
+    ip = domain_to_ip$ip[i],
+    country = geo$country,
+    city = geo$city,
+    org = geo$org,
+    stringsAsFactors = FALSE
+  )
+}
+
+results <- do.call(rbind, results_list)
+results
+
+```
+
+## Вывод
+
+В ходе работы были успешно получены знания и практические навыки использования языка программирования R для обработки данных, закреплены знания основных функций обработки данных экосистемы tidyverse языка R и навыки исследования метаданных DNS трафика.

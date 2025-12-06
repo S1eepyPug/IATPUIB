@@ -1,0 +1,142 @@
+---
+title: "Исследование вредоносной активности в домене
+Windows"
+author: "aleksandr.zwonov@yandex.ru"
+format: 
+  md:
+    output-file: README.md
+editor: visual
+---
+
+## Цель работы
+
+1.  Закрепить навыки исследования данных журнала Windows Active Directory
+2.  Изучить структуру журнала системы Windows Active Directory
+3.  Закрепить практические навыки использования языка программирования R для обработки данных
+4.  Закрепить знания основных функций обработки данных экосистемы tidyverse языка R
+
+## Исходные данные
+
+1.  Программное обеспечение Windows 10 Pro
+2.  Rstudio Desktop
+3.  Интерпретатор языка R 4.5.1
+
+## Задание
+
+Используя программный пакет dplyr языка программирования R провести анализ журналов и ответить на вопросы.
+
+### Шаги
+
+#### Подключение библиотек
+
+1.  Подключим все необходимые библиотеки
+
+```{r}
+options(repos = c(CRAN = "https://mirror.truenetwork.ru/CRAN/"))
+
+install.packages("dplyr")
+install.packages("jsonlite")
+install.packages("tidyverse")
+```
+
+```{r}
+library(dplyr)
+library(jsonlite)
+library(tidyverse)
+```
+
+#### Подготовка данных
+
+1.  Импортируем данные в R
+
+```{r}
+untar(tarfile = "dataset.tar.gz")
+```
+
+```{r}
+data <- stream_in(file("caldera_attack_evals_round1_day1_2019-10-20201108.json"), verbose = FALSE)
+```
+
+```{r}
+glimpse(data)
+```
+
+Поправим некоторые названия датасета
+
+```{r}
+data <- data %>%
+  rename(
+    metadata = `@metadata`, 
+    timestamp = `@timestamp`
+  )
+```
+
+```{r}
+glimpse(data)
+```
+
+#### Анализ
+
+Раскроем датафрейм, избавившись от вложенных датафреймов.
+
+```{r}
+clean_data <- data %>%
+  unnest(cols = c(timestamp, metadata, event, log, message, winlog, ecs, host, agent), names_sep = "_") %>%
+   unnest(
+    cols = c(winlog_event_data, winlog_process, winlog_user, winlog_user_data),
+    names_sep = "_"
+  )       
+  
+
+glimpse(clean_data)
+```
+
+Какое количество хостов представлено в данном датасете?
+
+```{r}
+host_column <- "winlog_event_data_SourceHostname"
+
+n_distinct(clean_data[[host_column]])
+```
+
+Подготовим датафрейм с расшифровкой Windows Event_ID и приведем типы данных к типу их значений
+
+```{r}
+library(xml2)
+library(rvest)
+
+webpage_url <- "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/appendix-l--events-to-monitor"
+webpage <- xml2::read_html(webpage_url)
+event_data <- rvest::html_table(webpage)[[1]]
+
+clean_event_data <- event_data %>%
+  rename(., 
+         Current_Windows_Event_ID=1,
+         Legacy_Windows_Event_ID=2,
+         Potential_Criticality=3,
+         Event_Summary=4
+         ) %>%
+  mutate(.,
+         Current_Windows_Event_ID = as.integer(Current_Windows_Event_ID),
+         Legacy_Windows_Event_ID = as.integer(Legacy_Windows_Event_ID)
+         )
+```
+
+```{r}
+head(clean_event_data)
+```
+
+Посчитаем количество событий с высоким и средним уровнем значимости.
+
+```{r}
+risked_events = clean_data %>%
+  left_join(clean_event_data, by=c("event_code"="Current_Windows_Event_ID")) 
+
+count(risked_events %>%
+  filter(Potential_Criticality == "High" | Potential_Criticality == "Medium" | Potential_Criticality == "Medium to High"))
+
+```
+
+## Вывод
+
+В ходе работы были закреплены навыки исследования данных журнала Windows Active Directory, изучена структура журнала системы Windows Active Directory, закреплены практические навыки использования языка программирования R для обработки данных, а также закреплены знания основных функций обработки данных экосистемы tidyverse языка R
